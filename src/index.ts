@@ -1,14 +1,13 @@
 // src/index.js
 import express, { Express, Request, Response } from "express";
-import dotenv from "dotenv";
-import { logger } from "./middleware/logger";
-import moment from "moment";
+import { log, logger } from "./middleware/logger";
 import { errorHandler } from "./middleware/error-handler";
-
-dotenv.config();
+import { Env } from "./env";
+import { DataContext } from "./data/DataContext";
+import { Document, Filter } from "mongodb";
 
 const app: Express = express();
-const port = process.env.PORT || 3000;
+const port = Env.port || 3000;
 app.set("view engine", "pug");
 app.set("views", "./src/pages");
 
@@ -19,14 +18,30 @@ app.get("/", (req: Request, res: Response) => {
   res.render("home", { title: "Yo", message: "momma" });
 });
 
-app.get("/foo", (req: Request, res: Response) => {
+app.get("/api/items/:name", async (req: Request, res: Response) => {
+  const dataContext = DataContext.getInstance();
+  const beegData = dataContext.collection("BeegData");
+
+  const query = { name: req.params.name };
+
+  console.log(query);
+
+  const foo = await beegData.findOne(query);
+
+  console.log(foo);
+
+  res.status(200);
+  res.contentType("application/json");
+  res.send(foo);
+});
+
+app.get("/boss-hogg", (req: Request, res: Response) => {
   throw new Error("them duke boys are at it again");
 });
 
 app.use(errorHandler);
 
 app.listen(port, () => {
-  console.log(
-    `[${moment().format()}]: Server is running at http://localhost:${port}`
-  );
+  log(`Server is running at http://localhost:${port}`);
+  log(Env.mongoConnectionString);
 });
