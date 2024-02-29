@@ -10,4 +10,6 @@ export function errorHandler(
   const requestTime = moment().format();
   console.error(`[${requestTime}] ${req.method} ${err.message}`);
   res.status(500).send(err.message);
+
+  next();
 }

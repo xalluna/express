@@ -8,7 +8,6 @@ export class DataContext {
   public static getInstance() {
     if (!DataContext.instance) {
       const client = new MongoClient(Env.mongoConnectionString);
-      // client.connect();
 
       DataContext.instance = client.db(Env.mongoDatabase);
     }

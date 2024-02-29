@@ -1,17 +1,15 @@
-// src/index.js
 import express, { Express, Request, Response } from "express";
-import { log, logger } from "./middleware/logger";
+import { Logger } from "./middleware/logger";
 import { errorHandler } from "./middleware/error-handler";
+import { DataContext } from "./data/data-context";
 import { Env } from "./env";
-import { DataContext } from "./data/DataContext";
-import { Document, Filter } from "mongodb";
 
 const app: Express = express();
 const port = Env.port || 3000;
 app.set("view engine", "pug");
 app.set("views", "./src/pages");
 
-app.use(logger);
+app.use(Logger.middleware);
 
 app.get("/", (req: Request, res: Response) => {
   res.status(200);
@@ -23,16 +21,11 @@ app.get("/api/items/:name", async (req: Request, res: Response) => {
   const beegData = dataContext.collection("BeegData");
 
   const query = { name: req.params.name };
-
-  console.log(query);
-
-  const foo = await beegData.findOne(query);
-
-  console.log(foo);
+  const data = await beegData.findOne(query);
 
   res.status(200);
   res.contentType("application/json");
-  res.send(foo);
+  res.send(data);
 });
 
 app.get("/boss-hogg", (req: Request, res: Response) => {
@@ -42,6 +35,5 @@ app.get("/boss-hogg", (req: Request, res: Response) => {
 app.use(errorHandler);
 
 app.listen(port, () => {
-  log(`Server is running at http://localhost:${port}`);
-  log(Env.mongoConnectionString);
+  Logger.log(`Server is running at http://localhost:${port}`);
 });
