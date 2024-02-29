@@ -1,0 +1,21 @@
+html
+    head
+        title=title
+        style(type="text/css").
+            body {
+                background-color: #3f3f3f;
+                color: #fff
+            }
+
+            a:link, a:visited {
+                color: #fff;
+            }
+
+            .flex-container {
+                display: flex;
+                flex-direction: column;
+            }
+    body
+        div.flex-container
+            message=message
+            a(href="https://google.com/search?q=dog") dog
