@@ -18,7 +18,7 @@ app.get("/", (req: Request, res: Response) => {
 
 app.get("/api/items/:name", async (req: Request, res: Response) => {
   const dataContext = DataContext.getInstance();
-  const beegData = dataContext.collection("BeegData");
+  const beegData = dataContext.collection(Env.mongoTables.beegData);
 
   const query = { name: req.params.name };
   const data = await beegData.findOne(query);
