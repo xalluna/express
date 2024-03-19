@@ -2,7 +2,9 @@ import express, { Express, Request, Response } from "express";
 import { Logger } from "./middleware/logger";
 import { errorHandler } from "./middleware/error-handler";
 import { DataContext } from "./data/data-context";
-import { Env } from "./env";
+import { Env, Table } from "./env";
+import cookieSession from "cookie-session";
+import { CookieAge } from "./common/cookie-age";
 
 const app: Express = express();
 const port = Env.port || 3000;
@@ -10,6 +12,13 @@ app.set("view engine", "pug");
 app.set("views", "./src/pages");
 
 app.use(Logger.middleware);
+app.use(
+  cookieSession({
+    name: Env.cookieName,
+    keys: ["username", "email"],
+    maxAge: CookieAge.Day,
+  })
+);
 
 app.get("/", (req: Request, res: Response) => {
   res.status(200);
@@ -18,10 +27,12 @@ app.get("/", (req: Request, res: Response) => {
 
 app.get("/api/items/:name", async (req: Request, res: Response) => {
   const dataContext = DataContext.getInstance();
-  const beegData = dataContext.collection(Env.mongoTables.beegData);
+  const beegData = dataContext.collection(Table.beegData);
 
   const query = { name: req.params.name };
   const data = await beegData.findOne(query);
+
+  console.log(data);
 
   res.status(200);
   res.contentType("application/json");

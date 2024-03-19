@@ -2,7 +2,7 @@ export type User = {
   username: string;
   normalizedUsername: string;
   email: string;
-  normaizledEmail: string;
+  normalizedEmail: string;
   passwordHash: string;
 };
 
@@ -16,4 +16,9 @@ export type UserSignUpDto = {
   email: string;
   password: string;
   passwordConfirm: string;
+};
+
+export type UserGetDto = {
+  username: string;
+  email: string;
 };

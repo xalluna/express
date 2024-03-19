@@ -1,57 +1,52 @@
 import { Db } from "mongodb";
 import { DataContext } from "../data/data-context";
-import { User, UserSignUpDto } from "./users";
-import { Env } from "../env";
+import { User, UserGetDto, UserLoginDto, UserSignUpDto } from "./users";
+import { Env, Table } from "../env";
 import { Error } from "../common/error";
 import { createHash } from "crypto";
+import { Response } from "express";
 
-class UsersService {
+export class UsersService {
   private _dataContext: Db;
-  constructor() {
+  private _response: Response;
+
+  constructor(res: Response) {
     this._dataContext = DataContext.getInstance();
+    this._response = res;
   }
 
-  public createUser(userDto: UserSignUpDto) {
-    const passwordHash = createHash("sha256")
-      .update(userDto.password)
-      .digest("base64");
+  private hashPassword(password: string) {
+    return createHash("sha256").update(password).digest("base64");
   }
 
-  //   private async *validateSignUp(userDto: UserSignUpDto): AsyncGenerator<Error> {
-  //     const userByUsername = await this._dataContext
-  //       .collection(Env.mongoTables.users)
-  //       .findOne<User>({ normalizedUsername: userDto.username.normalize() });
+  public createUser(userDto: UserSignUpDto): UserGetDto {
+    const passwordHash = this.hashPassword(userDto.password);
 
-  //     const userByEmail = await this._dataContext
-  //       .collection(Env.mongoTables.users)
-  //       .findOne<User>({ normalizedEmail: userDto.email.normalize() });
+    const user: User = {
+      username: userDto.username,
+      normalizedUsername: userDto.username.normalize(),
+      email: userDto.email,
+      normalizedEmail: userDto.email.normalize(),
+      passwordHash: passwordHash,
+    };
 
-  //     if (userByUsername) {
-  //       yield {
-  //         property: "username",
-  //         message: "Username taken.",
-  //       };
-  //     }
+    this._dataContext.collection(Table.users).insertOne(user);
 
-  //     if (userByEmail) {
-  //       yield {
-  //         property: "email",
-  //         message: "Email taken.",
-  //       };
-  //     }
+    return {
+      username: user.username,
+      email: user.email,
+    };
+  }
 
-  //     return;
-  //   }
-
-  public async signUp(userDto: UserSignUpDto): Promise<User | Error | Error[]> {
+  public async signUp(userDto: UserSignUpDto): Promise<void | Error[]> {
     const errors = new Array<Error>();
     const userByUsername = await this._dataContext
-      .collection(Env.mongoTables.users)
-      .findOne<User>({ normalizedUsername: userDto.username.normalize() });
+      .collection<User>(Table.users)
+      .findOne({ normalizedUsername: userDto.username.normalize() });
 
     const userByEmail = await this._dataContext
-      .collection(Env.mongoTables.users)
-      .findOne<User>({ normalizedEmail: userDto.email.normalize() });
+      .collection<User>(Table.users)
+      .findOne({ normalizedEmail: userDto.email.normalize() });
 
     if (userByUsername) {
       errors.push({
@@ -67,6 +62,34 @@ class UsersService {
       });
     }
 
-    return {} as unknown as User;
+    if (errors.length > 0) {
+      this._response.clearCookie(Env.cookieName);
+      return errors;
+    }
+
+    const user = this.createUser(userDto);
+
+    const cookieData: UserGetDto = {
+      username: user.username,
+      email: user.email,
+    };
+
+    this._response.cookie(Env.cookieName, cookieData);
+  }
+
+  public async signIn(dto: UserLoginDto): Promise<void | Error> {
+    const passwordHash = this.hashPassword(dto.password);
+
+    const user = await this._dataContext
+      .collection<User>(Table.users)
+      .findOne({ normalizedUsername: dto.username.normalize() });
+
+    if (!user) {
+      return { message: "Username or password is incorrect", property: "" };
+    }
+
+    if (user.passwordHash !== passwordHash) {
+      return { message: "Username or password is incorrect", property: "" };
+    }
   }
 }
