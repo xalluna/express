@@ -1,0 +1,22 @@
+extends index.pug
+
+block content
+    div.flex.column
+    form(action="/login" method="post").flex-container
+        div
+            label(for="name")="Username"
+            input(type="text" id="username" name="username")
+
+        div
+            label(for="password")="Password"
+            input(type="password" id="password" name="password")
+
+        div
+            button(type="submit")="Login"
+
+        div.flex
+            div Don't have an account?&nbsp
+            a(href="./register") Register
+
+    if hasErrors
+        include components/errors.pug

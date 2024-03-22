@@ -1,0 +1,45 @@
+html
+    head
+        title=title
+        style(type="text/css").
+            body {
+                background-color: #3f3f3f;
+                color: #fff
+            }
+
+            a:link, a:visited {
+                color: #fff;
+            }
+
+            .flex-container {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .flex {
+                display: flex;
+            }
+
+            .column {
+                flex-direction: column;
+            }
+            
+            .row {
+                flex-direction: row;
+            }
+
+            .space-between {
+                justify-content: space-between;
+            }
+
+            .error-container {
+                background-color: #633b48;
+                color: #ffd8e4;
+                border-radius: .5em;
+                padding: .1em;
+            }
+    body
+        include components/primary-navigation.pug
+        block content
+
+                    
