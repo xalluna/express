@@ -165,10 +165,7 @@ export class UsersService {
 
     const user = await this._dataContext
       .collection<User>(Table.users)
-      .findOne(
-        { normalizedUsername: dto.username.toLocaleUpperCase() },
-        { timeout: true }
-      );
+      .findOne({ normalizedUsername: dto.username.toLocaleUpperCase() });
 
     if (!user || user.passwordHash !== passwordHash) {
       errors.push({
