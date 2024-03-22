@@ -24,6 +24,8 @@ export class UsersService {
   }
 
   public createUser(userDto: UserSignUpDto): UserGetDto {
+    /* T2-REF3: user creation */
+
     const passwordHash = this.hashPassword(userDto.password);
 
     const user: User = {
@@ -45,6 +47,8 @@ export class UsersService {
   public async register(
     userDto: UserSignUpDto
   ): Promise<SuccessResponse<UserGetDto> | ErrorResponse> {
+    /* T2-REF1: basic validation */
+
     const errors = new Array<Error>();
 
     if (!userDto.username) {
@@ -84,6 +88,8 @@ export class UsersService {
       return { errors, hasErrors: true };
     }
 
+    /* T2-REF2: duplicate validation */
+
     const userByUsername = await this._dataContext
       .collection<User>(Table.users)
       .findOne({ normalizedUsername: userDto.username.normalize() });
@@ -119,10 +125,21 @@ export class UsersService {
     };
   }
 
-  public async signIn(
+  public async login(
     dto: UserLoginDto
   ): Promise<SuccessResponse<UserGetDto> | ErrorResponse> {
+    /* T3.1-REF1: basic validation */
+
     const errors = new Array<Error>();
+
+    if (this.getUser()) {
+      errors.push({
+        message: "User already logged in",
+        property: "",
+      });
+
+      return { errors, hasErrors: true };
+    }
 
     if (!dto.username) {
       errors.push({
@@ -143,6 +160,8 @@ export class UsersService {
     }
 
     const passwordHash = this.hashPassword(dto.password);
+
+    /* T3.1-REF2: user and password validation */
 
     const user = await this._dataContext
       .collection<User>(Table.users)

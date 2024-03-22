@@ -6,14 +6,13 @@ import { CookieAge } from "./common/cookie-age";
 import { Auth } from "./middleware/auth";
 import { routes } from "./routes";
 import { UsersService } from "./users/users-service";
-import { UserGetDto } from "./users/users";
 import { pages } from "./pages";
+import { UserCookie } from "./common/cookie";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import moment from "moment";
-// import cookieSession from "cookie-session";
-import { UserCookie } from "./common/cookie";
 
+//#region Init/Middleware
 const app: Express = express();
 const port = Env.port || 3000;
 app.set("view engine", "pug");
@@ -22,16 +21,12 @@ app.set("views", "./src/pages");
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
-// app.use(
-//   cookieSession({
-//     secret: Env.cookieName,
-//     maxAge: CookieAge.Minute,
-//   })
-// );
 
 app.use(Logger.middleware);
 app.use(Auth.middleware);
+//#endregion
 
+//#region Get Routes
 app.get(routes.home, (req: Request, res: Response) => {
   const userService = new UsersService(req, res);
   const user = userService.getUser();
@@ -42,8 +37,6 @@ app.get(routes.home, (req: Request, res: Response) => {
   }! Your session will expire at ${moment(expiration).format(
     "MMMM Do YYYY, h:mm:ss a"
   )}`;
-
-  console.log(req.cookies[Env.cookieName]);
 
   res.status(200);
   res.render(pages.home, { title: "Home", message });
@@ -74,16 +67,20 @@ app.get(routes.cookie, (req: Request, res: Response) => {
   res.status(200);
   res.render(pages.cookie, { cookies });
 });
+//#endregion
 
+//#region Post Routes
 app.post(routes.login, async (req: Request, res: Response) => {
   const usersService = new UsersService(req, res);
-  const response = await usersService.signIn(req.body);
+  const response = await usersService.login(req.body);
 
   if (response.hasErrors) {
     res.status(400);
     res.render(pages.login, response);
     return;
   }
+
+  /* T3.2-REF1: cookie creation */
 
   const cookieData: UserCookie = {
     username: response.data.username,
@@ -131,6 +128,7 @@ app.get("*", async (_: Request, res: Response) => {
   res.status(404);
   res.render(pages.notFound);
 });
+//#endregion
 
 app.use(errorHandler);
 
