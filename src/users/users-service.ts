@@ -2,16 +2,20 @@ import { Db } from "mongodb";
 import { DataContext } from "../data/data-context";
 import { User, UserGetDto, UserLoginDto, UserSignUpDto } from "./users";
 import { Env, Table } from "../env";
-import { Error } from "../common/error";
+import { Error, ErrorResponse, SuccessResponse } from "../common/response";
 import { createHash } from "crypto";
-import { Response } from "express";
+import { Response, Request } from "express";
+
+const emailRegex = new RegExp(".+@.+..+");
 
 export class UsersService {
   private _dataContext: Db;
+  private _request: Request;
   private _response: Response;
 
-  constructor(res: Response) {
+  constructor(req: Request, res: Response) {
     this._dataContext = DataContext.getInstance();
+    this._request = req;
     this._response = res;
   }
 
@@ -38,8 +42,48 @@ export class UsersService {
     };
   }
 
-  public async signUp(userDto: UserSignUpDto): Promise<void | Error[]> {
+  public async register(
+    userDto: UserSignUpDto
+  ): Promise<SuccessResponse<UserGetDto> | ErrorResponse> {
     const errors = new Array<Error>();
+
+    if (!userDto.username) {
+      errors.push({
+        message: "Username required",
+        property: "username",
+      });
+    }
+
+    if (!userDto.email) {
+      errors.push({
+        message: "Email required",
+        property: "email",
+      });
+    }
+
+    if (!emailRegex.exec(userDto.email)) {
+      errors.push({
+        message: "Invalid email",
+        property: "email",
+      });
+    }
+
+    if (!userDto.password) {
+      errors.push({
+        message: "Password required",
+        property: "password",
+      });
+    }
+
+    if (errors.length > 0) {
+      return { errors, hasErrors: true };
+    }
+
+    if (userDto.password !== userDto.passwordConfirm) {
+      errors.push({ message: "Passwords do not match", property: "password" });
+      return { errors, hasErrors: true };
+    }
+
     const userByUsername = await this._dataContext
       .collection<User>(Table.users)
       .findOne({ normalizedUsername: userDto.username.normalize() });
@@ -50,46 +94,80 @@ export class UsersService {
 
     if (userByUsername) {
       errors.push({
-        property: "username",
         message: "Username taken.",
+        property: "username",
       });
     }
 
     if (userByEmail) {
       errors.push({
-        property: "email",
         message: "Email taken.",
+        property: "email",
       });
     }
 
     if (errors.length > 0) {
       this._response.clearCookie(Env.cookieName);
-      return errors;
+      return { errors, hasErrors: true };
     }
 
     const user = this.createUser(userDto);
 
-    const cookieData: UserGetDto = {
-      username: user.username,
-      email: user.email,
+    return {
+      data: user,
+      hasErrors: false,
     };
-
-    this._response.cookie(Env.cookieName, cookieData);
   }
 
-  public async signIn(dto: UserLoginDto): Promise<void | Error> {
+  public async signIn(
+    dto: UserLoginDto
+  ): Promise<SuccessResponse<UserGetDto> | ErrorResponse> {
+    const errors = new Array<Error>();
+
+    if (!dto.username) {
+      errors.push({
+        message: "Username required",
+        property: "username",
+      });
+    }
+
+    if (!dto.password) {
+      errors.push({
+        message: "Password required",
+        property: "password",
+      });
+    }
+
+    if (errors.length > 0) {
+      return { errors, hasErrors: true };
+    }
+
     const passwordHash = this.hashPassword(dto.password);
 
     const user = await this._dataContext
       .collection<User>(Table.users)
-      .findOne({ normalizedUsername: dto.username.normalize() });
+      .findOne(
+        { normalizedUsername: dto.username.normalize() },
+        { timeout: true }
+      );
 
-    if (!user) {
-      return { message: "Username or password is incorrect", property: "" };
+    if (!user || user.passwordHash !== passwordHash) {
+      errors.push({
+        message: "Username or password is incorrect",
+        property: "",
+      });
+
+      return { errors, hasErrors: true };
     }
 
-    if (user.passwordHash !== passwordHash) {
-      return { message: "Username or password is incorrect", property: "" };
+    return { data: user, hasErrors: false };
+  }
+
+  public getUser() {
+    if (!this._request.cookies[Env.cookieName]) {
+      return undefined;
     }
+
+    return this._request.cookies[Env.cookieName] as UserGetDto;
   }
 }

@@ -1,0 +1,8 @@
+extends index.pug
+
+block content
+    div.flex.column
+    form(action="/log-out" method="post").flex-container
+        div Logging out will clear all cookies
+        div
+            button(type="submit")="Log out"
