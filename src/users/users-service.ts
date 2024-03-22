@@ -30,9 +30,9 @@ export class UsersService {
 
     const user: User = {
       username: userDto.username,
-      normalizedUsername: userDto.username.normalize(),
+      normalizedUsername: userDto.username.toLocaleUpperCase(),
       email: userDto.email,
-      normalizedEmail: userDto.email.normalize(),
+      normalizedEmail: userDto.email.toLocaleUpperCase(),
       passwordHash: passwordHash,
     };
 
@@ -92,11 +92,11 @@ export class UsersService {
 
     const userByUsername = await this._dataContext
       .collection<User>(Table.users)
-      .findOne({ normalizedUsername: userDto.username.normalize() });
+      .findOne({ normalizedUsername: userDto.username.toLocaleUpperCase() });
 
     const userByEmail = await this._dataContext
       .collection<User>(Table.users)
-      .findOne({ normalizedEmail: userDto.email.normalize() });
+      .findOne({ normalizedEmail: userDto.email.toLocaleUpperCase() });
 
     if (userByUsername) {
       errors.push({
@@ -166,7 +166,7 @@ export class UsersService {
     const user = await this._dataContext
       .collection<User>(Table.users)
       .findOne(
-        { normalizedUsername: dto.username.normalize() },
+        { normalizedUsername: dto.username.toLocaleUpperCase() },
         { timeout: true }
       );
 
