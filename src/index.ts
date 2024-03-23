@@ -117,7 +117,9 @@ app.post(routes.register, async (req: Request, res: Response) => {
 });
 
 app.post(routes.logOut, async (req: Request, res: Response) => {
-  res.clearCookie(Env.cookieName);
+  const cookieKeys = Object.keys(req.cookies);
+
+  cookieKeys.forEach((key) => res.clearCookie(key));
   req.session = null;
 
   res.status(200);
